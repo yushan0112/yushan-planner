@@ -199,7 +199,10 @@
             </div>
             <div class="min-w-0">
                 <h1 class="text-sm font-bold leading-tight truncate">羽珊的學習與生活計劃本</h1>
-                <p id="mobile-header-date" class="text-[11px] text-theme-muted truncate"></p>
+                <p class="text-[11px] text-theme-muted truncate flex items-center gap-1.5">
+                    <span class="cloud-dot inline-block w-2 h-2 rounded-full shrink-0 bg-stone-400" title="雲端同步狀態"></span>
+                    <span id="mobile-header-date"></span>
+                </p>
             </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
@@ -270,6 +273,10 @@
                     </div>
                 </div>
 
+                <div class="flex items-center gap-2 px-2 text-[11px] text-theme-muted">
+                    <span class="cloud-dot inline-block w-2 h-2 rounded-full shrink-0 bg-stone-400"></span>
+                    <span class="cloud-status-text truncate">雲端同步：檢查中…</span>
+                </div>
                 <button onclick="openModal('sync-app-modal')" class="w-full py-2.5 px-3 rounded-2xl bg-theme-pink text-theme-text text-xs font-bold flex items-center justify-center gap-1.5 hover:opacity-90 transition shadow-2xs">
                     <i data-lucide="smartphone" class="w-4 h-4 text-theme-pinkDark"></i>
                     <span>電腦 ↔ 手機同步 & 安裝 App</span>
@@ -1014,8 +1021,32 @@
                 <button onclick="closeModal('sync-app-modal')" class="p-1.5 rounded-xl bg-theme-oat"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
 
+            <div class="p-4 rounded-2xl bg-theme-sage/35 border border-theme-border space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="text-xs font-bold text-theme-sageDark">☁️ 雲端自動同步（Supabase）</h4>
+                    <span class="flex items-center gap-1.5 text-[11px] text-theme-muted">
+                        <span class="cloud-dot inline-block w-2 h-2 rounded-full shrink-0 bg-stone-400"></span>
+                        <span class="cloud-status-text">檢查中…</span>
+                    </span>
+                </div>
+                <p id="cloud-config-warning" class="hidden text-[11px] font-bold text-rose-500">尚未設定：請在 index.html 裡找到 SUPABASE_ANON_KEY，貼上你的 Supabase 金鑰。</p>
+                <ol class="text-xs text-theme-muted space-y-1 list-decimal pl-4 leading-relaxed">
+                    <li>在<strong class="text-theme-text">資料最完整的那台裝置</strong>按「建立雲端同步」。</li>
+                    <li>按「複製金鑰」，傳給自己（例如 LINE 的 Keep）。</li>
+                    <li>在其他裝置貼上金鑰，按「連接這把金鑰」。之後每次修改都會自動同步。</li>
+                </ol>
+                <input type="text" id="cloud-sync-key-input" placeholder="同步金鑰（ys- 開頭）" autocomplete="off" class="w-full bg-theme-card border border-theme-border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="createCloudSync()" class="px-3.5 py-2 rounded-xl bg-theme-text text-theme-card text-xs font-bold active:scale-95 transition">建立雲端同步</button>
+                    <button onclick="copyCloudSyncKey()" class="px-3.5 py-2 rounded-xl bg-theme-card border border-theme-border text-xs font-bold active:scale-95 transition">複製金鑰</button>
+                    <button onclick="connectCloudSync()" class="px-3.5 py-2 rounded-xl bg-theme-sageDark text-white text-xs font-bold active:scale-95 transition">連接這把金鑰</button>
+                    <button onclick="disconnectCloudSync()" class="px-3 py-2 rounded-xl text-xs text-theme-muted hover:text-rose-500">停止同步</button>
+                </div>
+                <p class="text-[11px] text-theme-muted">金鑰就像密碼，拿到的人可以讀寫你的計劃本，不要公開貼出。</p>
+            </div>
+
             <div class="p-4 rounded-2xl bg-theme-bg border border-theme-border space-y-2.5">
-                <h4 class="text-xs font-bold text-theme-pinkDark">方法一：一鍵同步碼（電腦傳 LINE 給手機瞬間同步）</h4>
+                <h4 class="text-xs font-bold text-theme-pinkDark">備用：一鍵同步碼（手動傳一次）</h4>
                 <p class="text-xs text-theme-muted leading-relaxed">在電腦按「複製同步碼」貼到 LINE 給自己，再用手機開啟計劃本貼上，所有課表、進度與創作靈感立刻同步！</p>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="copySyncCode()" class="px-3.5 py-2 rounded-xl bg-theme-text text-theme-card text-xs font-bold active:scale-95 transition">📋 複製目前進度同步碼</button>
@@ -1032,7 +1063,7 @@
             </div>
 
             <div class="p-4 rounded-2xl bg-theme-butter/45 border border-theme-border space-y-2">
-                <h4 class="text-xs font-bold">方法二：把這個計劃本變成 iPhone / Android 桌面 App</h4>
+                <h4 class="text-xs font-bold">把這個計劃本變成 iPhone / Android 桌面 App</h4>
                 <ol class="text-xs text-theme-muted space-y-1.5 list-decimal pl-4 leading-relaxed">
                     <li><strong class="text-theme-text">30 秒免寫扣加入主畫面</strong>：將此網頁推上 GitHub Pages 或 Vercel 取得網址後，用 iPhone <strong class="text-theme-text">Safari</strong> 打開網址，點選下方「分享」圖示 $\rightarrow$ <strong class="text-theme-text">「加入主畫面」</strong>，桌面就會出現獨立圖示且全螢幕無網址列運行！</li>
                     <li><strong class="text-theme-text">用 Capacitor 8 打包進 Xcode</strong>：建立資料夾放入改名為 <code class="px-1 bg-theme-card rounded">index.html</code> 的檔案，執行 <code class="px-1 bg-theme-card rounded">npx cap add ios && npx cap open ios</code> 即可在 MacBook Air 直接編譯進 iPhone。</li>
@@ -1675,8 +1706,14 @@
         function loadState() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) {
-                    const parsed = JSON.parse(raw);
+                if (raw) return normalizeState(JSON.parse(raw));
+            } catch (e) {
+                console.error('讀取本地存檔失敗', e);
+            }
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+
+        function normalizeState(parsed) {
                     return {
                         ...DEFAULT_DATA,
                         ...parsed,
@@ -1690,21 +1727,219 @@
                         assignments: Array.isArray(parsed.assignments) ? parsed.assignments : [],
                         weightLogs: Array.isArray(parsed.weightLogs) ? parsed.weightLogs : DEFAULT_DATA.weightLogs,
                         calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : DEFAULT_DATA.calendarEvents,
-                        targetWeight: parsed.targetWeight || 50.0
+                        targetWeight: parsed.targetWeight || 50.0,
+                        _updatedAt: parsed._updatedAt || 0
                     };
-                }
-            } catch (e) {
-                console.error('讀取本地存檔失敗', e);
-            }
-            return JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
 
+        // 每次存檔都蓋上時間戳記，並排入雲端上傳佇列
         function saveState() {
+            state._updatedAt = Date.now();
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {
                 console.error('存檔失敗', e);
             }
+            if (typeof cloudQueuePush === 'function') cloudQueuePush();
+        }
+
+        // ==================== Supabase 雲端即時同步 ====================
+        // 第一次使用：把下面這行換成你 Supabase 專案的 anon / publishable key
+        // （Supabase → Project Settings → API Keys），這把金鑰本來就是設計給前端公開使用的。
+        const SUPABASE_URL = 'https://oqzvezjbvxpyiwoxrvfj.supabase.co';
+        const SUPABASE_ANON_KEY = '在這裡貼上你的 anon 或 publishable key';
+        const SYNC_KEY_STORAGE = 'yushan_cloud_sync_key';
+
+        let cloudSyncKey = localStorage.getItem(SYNC_KEY_STORAGE) || '';
+        let cloudDirty = false;
+        let cloudPushTimer = null;
+        let cloudBusy = false;
+
+        function cloudConfigured() {
+            return SUPABASE_ANON_KEY && !SUPABASE_ANON_KEY.startsWith('在這裡');
+        }
+
+        function cloudHeaders() {
+            const h = { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY };
+            // 舊版 anon key 是 JWT（eyJ 開頭），需要同時放在 Authorization；新版 publishable key 不用
+            if (SUPABASE_ANON_KEY.startsWith('eyJ')) h['Authorization'] = 'Bearer ' + SUPABASE_ANON_KEY;
+            return h;
+        }
+
+        async function cloudRpc(fn, body, keepalive = false) {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+                method: 'POST',
+                headers: cloudHeaders(),
+                body: JSON.stringify(body),
+                keepalive
+            });
+            if (!res.ok) throw new Error(`${fn} ${res.status}: ${await res.text()}`);
+            const text = await res.text();
+            return text ? JSON.parse(text) : null;
+        }
+
+        function setCloudStatus(kind, text) {
+            const colors = { ok: 'bg-emerald-500', busy: 'bg-amber-400', off: 'bg-stone-400', err: 'bg-rose-500' };
+            document.querySelectorAll('.cloud-dot').forEach(el => {
+                el.className = `cloud-dot inline-block w-2 h-2 rounded-full shrink-0 ${colors[kind] || colors.off}`;
+            });
+            document.querySelectorAll('.cloud-status-text').forEach(el => { el.textContent = text; });
+        }
+
+        function refreshCloudStatus() {
+            if (!cloudConfigured()) return setCloudStatus('off', '雲端同步：尚未設定 Supabase 金鑰');
+            if (!cloudSyncKey) return setCloudStatus('off', '雲端同步：尚未連接同步金鑰');
+            if (cloudDirty) return setCloudStatus('busy', '雲端同步：有變更等待上傳…');
+            setCloudStatus('ok', '雲端同步：已同步');
+        }
+
+        function cloudQueuePush() {
+            if (!cloudConfigured() || !cloudSyncKey) return;
+            cloudDirty = true;
+            refreshCloudStatus();
+            clearTimeout(cloudPushTimer);
+            cloudPushTimer = setTimeout(cloudPushNow, 1200);
+        }
+
+        async function cloudPushNow(keepalive = false) {
+            clearTimeout(cloudPushTimer);
+            if (!cloudConfigured() || !cloudSyncKey || !cloudDirty) return;
+            const sentAt = state._updatedAt;
+            try {
+                setCloudStatus('busy', '雲端同步：上傳中…');
+                const storedAt = await cloudRpc('planner_put', {
+                    p_key: cloudSyncKey, p_data: state, p_updated_at: sentAt
+                }, keepalive);
+                // 上傳期間若又有新修改，維持待上傳
+                if (state._updatedAt === sentAt) cloudDirty = false;
+                // 雲端有更新的版本（其他裝置剛改過）→ 拉下來
+                if (storedAt && storedAt > sentAt) await cloudPull();
+                refreshCloudStatus();
+                if (cloudDirty) cloudQueuePush();
+            } catch (e) {
+                console.error('雲端上傳失敗', e);
+                setCloudStatus('err', '雲端同步：上傳失敗，連線恢復後會自動重試');
+            }
+        }
+
+        async function cloudPull({ force = false } = {}) {
+            if (!cloudConfigured() || !cloudSyncKey || cloudBusy) return;
+            // 本機還有沒上傳的修改時，不拿雲端舊資料覆蓋
+            if (cloudDirty && !force) return cloudPushNow();
+            cloudBusy = true;
+            try {
+                const remote = await cloudRpc('planner_get', { p_key: cloudSyncKey });
+                if (!remote) {
+                    // 雲端還沒有這把金鑰的資料 → 用這台裝置的資料建立
+                    cloudDirty = true;
+                    cloudBusy = false;
+                    return cloudPushNow();
+                }
+                const remoteAt = remote._updatedAt || 0;
+                if (force || remoteAt > (state._updatedAt || 0)) {
+                    // 正在打字或彈窗開著時先不覆蓋，下次檢查再套用
+                    const typing = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+                    const modalOpen = document.querySelector('.modal-backdrop.flex');
+                    if (!force && (typing || modalOpen)) return;
+                    applyRemoteState(remote);
+                }
+                refreshCloudStatus();
+            } catch (e) {
+                console.error('雲端下載失敗', e);
+                setCloudStatus('err', '雲端同步：連線失敗，請檢查網路或金鑰設定');
+            } finally {
+                cloudBusy = false;
+            }
+        }
+
+        function applyRemoteState(remote) {
+            state = normalizeState(remote);
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+            setTheme(state.theme || 'cream', false);
+            refreshCurrentView();
+        }
+
+        // 重新渲染目前分頁，不捲回頂部
+        function refreshCurrentView() {
+            if (activeTab === 'dashboard') renderDashboardAll();
+            if (activeTab === 'planner') renderPlannerAll();
+            if (activeTab === 'weekly') setDailyTimelineDate(selectedTimelineDate);
+            if (activeTab === 'academic') renderAcademicAll();
+            if (activeTab === 'studio') renderStudioAll();
+            if (activeTab === 'habits') renderHabitsAll();
+            lucide.createIcons();
+        }
+
+        function generateSyncKey() {
+            const bytes = new Uint8Array(18);
+            crypto.getRandomValues(bytes);
+            return 'ys-' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function renderCloudSyncPanel() {
+            const input = document.getElementById('cloud-sync-key-input');
+            if (input) input.value = cloudSyncKey;
+            const warn = document.getElementById('cloud-config-warning');
+            if (warn) warn.classList.toggle('hidden', cloudConfigured());
+            refreshCloudStatus();
+        }
+
+        // 在資料最完整的那台裝置上按：產生新金鑰，並把這台的資料上傳成雲端版本
+        async function createCloudSync() {
+            if (!cloudConfigured()) return showToast('請先在程式碼裡填入 Supabase 金鑰');
+            if (cloudSyncKey && !confirm('已經有同步金鑰了，確定要換一把新的嗎？其他裝置需要重新輸入新金鑰。')) return;
+            cloudSyncKey = generateSyncKey();
+            localStorage.setItem(SYNC_KEY_STORAGE, cloudSyncKey);
+            state._updatedAt = Date.now();
+            cloudDirty = true;
+            renderCloudSyncPanel();
+            await cloudPushNow();
+            if (!cloudDirty) showToast('☁️ 已建立雲端同步！把金鑰複製到其他裝置貼上');
+        }
+
+        // 在其他裝置上按：輸入同一把金鑰，下載雲端資料覆蓋本機
+        async function connectCloudSync() {
+            if (!cloudConfigured()) return showToast('請先在程式碼裡填入 Supabase 金鑰');
+            const key = document.getElementById('cloud-sync-key-input').value.trim();
+            if (key.length < 24) return showToast('同步金鑰格式不正確，請完整貼上');
+            if (!confirm('連接後，這台裝置的資料會被雲端資料取代，確定嗎？')) return;
+            cloudSyncKey = key;
+            localStorage.setItem(SYNC_KEY_STORAGE, key);
+            cloudDirty = false;
+            await cloudPull({ force: true });
+            showToast('🎉 已連接雲端同步，資料已更新！');
+        }
+
+        function copyCloudSyncKey() {
+            if (!cloudSyncKey) return showToast('還沒有同步金鑰，請先按「建立雲端同步」');
+            const ta = document.createElement('textarea');
+            ta.value = cloudSyncKey;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+            showToast('已複製同步金鑰，請只傳給自己');
+        }
+
+        function disconnectCloudSync() {
+            if (!confirm('這台裝置會停止雲端同步（雲端資料會保留），確定嗎？')) return;
+            cloudSyncKey = '';
+            cloudDirty = false;
+            localStorage.removeItem(SYNC_KEY_STORAGE);
+            renderCloudSyncPanel();
+            showToast('已在這台裝置停止雲端同步');
+        }
+
+        function startCloudSync() {
+            refreshCloudStatus();
+            cloudPull();
+            setInterval(() => { if (!document.hidden) cloudPull(); }, 20000);
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) cloudPushNow(true);
+                else cloudPull();
+            });
+            window.addEventListener('online', () => cloudPull());
+            window.addEventListener('pagehide', () => cloudPushNow(true));
         }
 
         function showToast(msg) {
@@ -1732,6 +1967,7 @@
             el.classList.remove('hidden');
             el.classList.add('flex');
             document.body.style.overflow = 'hidden';
+            if (id === 'sync-app-modal') renderCloudSyncPanel();
             lucide.createIcons();
         }
 
@@ -1743,13 +1979,14 @@
         }
 
         // ==================== 主題切換 ====================
-        function setTheme(themeName) {
+        // persist=false 用於開啟網頁或套用雲端資料時，只換外觀、不算成一次新的修改
+        function setTheme(themeName, persist = true) {
             state.theme = themeName;
             document.documentElement.setAttribute('data-theme', themeName);
             const names = { cream: '韓系奶油', pompom: '布丁焦糖黃', dark: '深夜護眼' };
             const label = document.getElementById('theme-label');
             if (label) label.textContent = names[themeName] || '韓系奶油';
-            saveState();
+            if (persist) saveState();
         }
 
         function cycleTheme() {
@@ -4006,9 +4243,9 @@
                 const encoded = raw.replace('YUSHAN_SYNC_V1:', '');
                 const jsonStr = decodeURIComponent(escape(atob(encoded)));
                 const imported = JSON.parse(jsonStr);
-                state = { ...DEFAULT_DATA, ...imported };
+                state = normalizeState(imported);
                 saveState();
-                setTheme(state.theme || 'cream');
+                setTheme(state.theme || 'cream', false);
                 switchTab(activeTab);
                 document.getElementById('paste-sync-code-input').value = '';
                 closeModal('sync-app-modal');
@@ -4036,9 +4273,9 @@
             reader.onload = function(evt) {
                 try {
                     const imported = JSON.parse(evt.target.result);
-                    state = { ...DEFAULT_DATA, ...imported };
+                    state = normalizeState(imported);
                     saveState();
-                    setTheme(state.theme || 'cream');
+                    setTheme(state.theme || 'cream', false);
                     switchTab(activeTab);
                     closeModal('sync-app-modal');
                     showToast('已成功匯入並還原資料！');
@@ -4051,10 +4288,11 @@
 
         // ==================== 初始化 ====================
         window.addEventListener('DOMContentLoaded', () => {
-            setTheme(state.theme || 'cream');
+            setTheme(state.theme || 'cream', false);
             populateHourSelect('fb-start', 9);
             switchTab('dashboard');
             lucide.createIcons();
+            startCloudSync();
         });
     </script>
 </body>
