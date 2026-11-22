@@ -1335,18 +1335,18 @@
         <div class="bottom-sheet-card bg-theme-card max-w-md w-full p-5 sm:p-6 shadow-soft border border-theme-border">
             <div class="sm:hidden w-10 h-1 rounded-full bg-theme-border mx-auto mb-3"></div>
             <h3 class="text-lg font-bold mb-4">新增考試倒數與範圍</h3>
-            <form onsubmit="saveNewExam(event)" class="space-y-3.5">
+            <form onsubmit="saveNewExam(event)" novalidate class="space-y-3.5">
                 <div>
                     <label class="block text-xs font-medium text-theme-muted mb-1">考試名稱</label>
-                    <input type="text" id="ex-title" required placeholder="例如：作業系統期末考 / TOEIC 正式考" class="w-full bg-theme-bg border border-theme-border rounded-2xl px-3.5 py-2.5 text-sm">
+                    <input type="text" id="ex-title" placeholder="例如：作業系統期末考 / TOEIC 正式考" class="w-full bg-theme-bg border border-theme-border rounded-2xl px-3.5 py-2.5 text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-theme-muted mb-1">考試日期</label>
-                    <input type="date" id="ex-date" required class="w-full bg-theme-bg border border-theme-border rounded-2xl px-3.5 py-2.5 text-sm">
+                    <input type="date" id="ex-date" class="w-full bg-theme-bg border border-theme-border rounded-2xl px-3.5 py-2.5 text-sm">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-theme-muted mb-1">考試範圍章節（用逗號分隔）</label>
-                    <input type="text" id="ex-scopes" required placeholder="例如：Ch5 CPU Scheduling, Ch6 Synchronization, Ch7 Deadlocks" class="w-full bg-theme-bg border border-theme-border rounded-2xl px-3.5 py-2.5 text-sm">
+                    <label class="block text-xs font-medium text-theme-muted mb-1">考試範圍章節（用逗號分隔，之後也可以再加）</label>
+                    <input type="text" id="ex-scopes" placeholder="例如：Ch5 CPU Scheduling, Ch6 Synchronization, Ch7 Deadlocks" class="w-full bg-theme-bg border border-theme-border rounded-2xl px-3.5 py-2.5 text-sm">
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeModal('exam-modal')" class="px-4 py-2.5 rounded-xl text-xs bg-theme-oat">取消</button>
@@ -1713,6 +1713,20 @@
             return JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
 
+        function fixExams(list) {
+            return (list || []).filter(ex => ex && typeof ex === 'object').map((ex, i) => ({
+                ...ex,
+                id: ex.id || ('ex_fix_' + i + '_' + Date.now()),
+                title: ex.title || '未命名考試',
+                date: ex.date || '',
+                scopes: (Array.isArray(ex.scopes) ? ex.scopes : []).filter(Boolean).map((sc, j) => (
+                    typeof sc === 'string'
+                        ? { id: 'sc_fix_' + i + '_' + j, text: sc, done: false }
+                        : { ...sc, id: sc.id || ('sc_fix_' + i + '_' + j), text: sc.text || '', done: !!sc.done }
+                ))
+            }));
+        }
+
         function normalizeState(parsed) {
                     return {
                         ...DEFAULT_DATA,
@@ -1727,6 +1741,7 @@
                         assignments: Array.isArray(parsed.assignments) ? parsed.assignments : [],
                         weightLogs: Array.isArray(parsed.weightLogs) ? parsed.weightLogs : DEFAULT_DATA.weightLogs,
                         calendarEvents: Array.isArray(parsed.calendarEvents) ? parsed.calendarEvents : DEFAULT_DATA.calendarEvents,
+                        exams: fixExams(Array.isArray(parsed.exams) ? parsed.exams : DEFAULT_DATA.exams),
                         targetWeight: parsed.targetWeight || 50.0,
                         _updatedAt: parsed._updatedAt || 0
                     };
@@ -3341,27 +3356,43 @@
 
             const now = new Date();
             const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            document.getElementById('exams-scope-grid').innerHTML = state.exams.map(ex => {
-                const diff = Math.ceil((new Date(ex.date + 'T00:00:00') - todayZero) / 86400000);
+            state.exams = fixExams(state.exams);
+            document.getElementById('exams-scope-grid').innerHTML = state.exams.length === 0
+                ? `<div class="md:col-span-2 p-6 rounded-3xl border border-dashed border-theme-border text-center text-xs text-theme-muted">還沒有考試，按右上角「+ 新增考試」建立一個吧！</div>`
+                : state.exams.map(ex => {
+                const hasDate = !!ex.date;
+                const diff = hasDate ? Math.ceil((new Date(ex.date + 'T00:00:00') - todayZero) / 86400000) : null;
                 const doneCnt = ex.scopes.filter(s => s.done).length;
                 const pct = ex.scopes.length ? Math.round((doneCnt / ex.scopes.length) * 100) : 0;
+                const badge = !hasDate ? '未設日期' : diff > 0 ? `倒數 ${diff} 天` : diff === 0 ? '就是今天！' : '已結束';
                 return `
                     <div class="bg-theme-card rounded-3xl p-5 shadow-card border border-theme-border space-y-3">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <h4 class="font-bold text-base break-words">${escapeHtml(ex.title)}</h4>
-                                <p class="text-xs text-theme-muted">日期：${ex.date} • 範圍完成 ${pct}%</p>
+                                <p class="text-xs text-theme-muted">日期：${escapeHtml(ex.date) || '—'} • 範圍完成 ${pct}%</p>
                             </div>
-                            <span class="px-3 py-1 rounded-full bg-rose-500/15 text-rose-500 text-xs font-bold shrink-0">${diff >= 0 ? `倒數 ${diff} 天` : '已結束'}</span>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="px-3 py-1 rounded-full bg-rose-500/15 text-rose-500 text-xs font-bold">${badge}</span>
+                                <button onclick="deleteExam('${ex.id}')" title="刪除這個考試" class="px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 text-xs font-bold hover:bg-rose-500/20 active:scale-95 transition">刪除</button>
+                            </div>
                         </div>
                         <div class="space-y-1.5">
+                            ${ex.scopes.length === 0 ? '<p class="text-xs text-theme-muted px-1">還沒有範圍，在下面輸入新增。</p>' : ''}
                             ${ex.scopes.map(s => `
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl bg-theme-bg cursor-pointer text-xs">
-                                    <input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleExamScope('${ex.id}', '${s.id}')" class="w-4 h-4 rounded accent-theme-pinkDark shrink-0">
-                                    <span class="break-words ${s.done ? 'line-through text-theme-muted' : ''}">${escapeHtml(s.text)}</span>
-                                </label>
+                                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-theme-bg text-xs">
+                                    <label class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer">
+                                        <input type="checkbox" ${s.done ? 'checked' : ''} onchange="toggleExamScope('${ex.id}', '${s.id}')" class="w-4 h-4 rounded accent-theme-pinkDark shrink-0">
+                                        <span class="break-words ${s.done ? 'line-through text-theme-muted' : ''}">${escapeHtml(s.text)}</span>
+                                    </label>
+                                    <button onclick="deleteExamScope('${ex.id}', '${s.id}')" title="刪除這個範圍" class="w-7 h-7 shrink-0 rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-95 transition">✕</button>
+                                </div>
                             `).join('')}
                         </div>
+                        <form onsubmit="addExamScope(event, '${ex.id}')" class="flex gap-2">
+                            <input type="text" name="scope" placeholder="新增範圍，例如 Ch8（可用逗號一次加多個）" class="flex-1 min-w-0 bg-theme-bg border border-theme-border rounded-xl px-3 py-2 text-xs focus:outline-none">
+                            <button type="submit" class="px-3 py-2 rounded-xl bg-theme-pink text-theme-text text-xs font-bold shrink-0 active:scale-95 transition">+ 加入</button>
+                        </form>
                     </div>
                 `;
             }).join('');
@@ -3537,15 +3568,53 @@
             showToast('已送入「全任務收件匣」！');
         }
 
+        function splitScopes(text) {
+            return String(text || '').split(/[,，、;；\n]/).map(s => s.trim()).filter(Boolean)
+                .map((t, idx) => ({ id: 'sc_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 6), text: t, done: false }));
+        }
+
         function saveNewExam(e) {
             e.preventDefault();
-            const scopes = document.getElementById('ex-scopes').value.split(/[,，]/).map(s => s.trim()).filter(Boolean).map((text, idx) => ({
-                id: 'sc_' + Date.now() + '_' + idx, text, done: false
-            }));
-            state.exams.push({ id: 'ex_' + Date.now(), title: document.getElementById('ex-title').value.trim(), date: document.getElementById('ex-date').value, scopes });
+            const title = document.getElementById('ex-title').value.trim();
+            const date = document.getElementById('ex-date').value;
+            if (!title) return showToast('請輸入考試名稱');
+            if (!date) return showToast('請選擇考試日期');
+            if (!Array.isArray(state.exams)) state.exams = [];
+            state.exams.push({ id: 'ex_' + Date.now(), title, date, scopes: splitScopes(document.getElementById('ex-scopes').value) });
             e.target.reset();
             saveState();
             closeModal('exam-modal');
+            renderAcademicAll();
+            showToast(`已建立「${title}」`);
+        }
+
+        function deleteExam(exId) {
+            const ex = state.exams.find(x => x.id === exId);
+            if (!ex) return;
+            if (!confirm(`確定要刪除「${ex.title}」和它的所有範圍嗎？`)) return;
+            state.exams = state.exams.filter(x => x.id !== exId);
+            saveState();
+            renderAcademicAll();
+            if (activeTab === 'dashboard') renderDashboardAll();
+            showToast('已刪除考試');
+        }
+
+        function deleteExamScope(exId, scId) {
+            const ex = state.exams.find(x => x.id === exId);
+            if (!ex) return;
+            ex.scopes = ex.scopes.filter(s => s.id !== scId);
+            saveState();
+            renderAcademicAll();
+        }
+
+        function addExamScope(e, exId) {
+            e.preventDefault();
+            const ex = state.exams.find(x => x.id === exId);
+            if (!ex) return;
+            const added = splitScopes(e.target.scope.value);
+            if (!added.length) return showToast('請輸入範圍內容');
+            ex.scopes.push(...added);
+            saveState();
             renderAcademicAll();
         }
 
