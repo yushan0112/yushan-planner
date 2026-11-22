@@ -323,6 +323,9 @@
                     </div>
                 </div>
 
+                <!-- 專題進度小卡（截止日過後自動隱藏） -->
+                <div id="dash-project-card" class="hidden"></div>
+
                 <!-- 自訂重要目標與倒數區塊 -->
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
@@ -639,17 +642,17 @@
             <section id="tab-academic" class="tab-content hidden space-y-5 fade-in">
                 <!-- 子導覽切換 -->
                 <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                    <button onclick="switchAcadSub('keelung')" data-acad="keelung" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">🗺️ 基隆景點專題 (11/11–12/11)</button>
                     <button onclick="switchAcadSub('progress')" data-acad="progress" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">📊 各科進度與番茄鐘</button>
                     <button onclick="switchAcadSub('assignments')" data-acad="assignments" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">📝 作業與報告</button>
                     <button onclick="switchAcadSub('courses')" data-acad="courses" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">🏫 課程管理</button>
                     <button onclick="switchAcadSub('exams')" data-acad="exams" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">🎯 考試倒數與範圍</button>
                     <button onclick="switchAcadSub('notes')" data-acad="notes" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">🔗 筆記與教材連結</button>
                     <button onclick="switchAcadSub('mistakes')" data-acad="mistakes" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">🧠 錯題複習追蹤</button>
+                    <button onclick="switchAcadSub('keelung')" data-acad="keelung" class="acad-sub-btn px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition">📌 專題計畫</button>
                 </div>
 
                 <!-- 0. 基隆景點專題：一個月學習計畫 (11/11 - 12/11) -->
-                <div id="acad-panel-keelung" class="acad-panel space-y-5">
+                <div id="acad-panel-keelung" class="acad-panel hidden space-y-5">
                     <div class="bg-theme-card rounded-3xl p-5 sm:p-6 shadow-soft border border-theme-border space-y-4">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="space-y-1">
@@ -702,7 +705,7 @@
                 </div>
 
                 <!-- 1. 各科讀書進度與番茄鐘 -->
-                <div id="acad-panel-progress" class="acad-panel hidden space-y-5">
+                <div id="acad-panel-progress" class="acad-panel space-y-5">
                     <div class="bg-theme-card rounded-3xl p-5 shadow-soft border border-theme-border flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="space-y-1 text-center sm:text-left">
                             <span id="pomo-status-badge" class="inline-block px-3 py-1 rounded-full bg-theme-pink text-xs font-bold">專注模式 • 25 分鐘</span>
@@ -1687,7 +1690,7 @@
 
         let state = loadState();
         let activeTab = 'dashboard';
-        let activeAcadSub = 'keelung';
+        let activeAcadSub = 'progress';
         let poolFilter = 'ALL';
         let studioFilter = 'ALL';
         let activeProjectId = null;
@@ -2041,7 +2044,7 @@
                 document.getElementById('weekly-end-hour-cfg').value = String(state.weeklyEndHour || 22);
                 setDailyTimelineDate(selectedTimelineDate);
             }
-            if (tab === 'academic') renderAcademicAll();
+            if (tab === 'academic') switchAcadSub(activeAcadSub);
             if (tab === 'studio') renderStudioAll();
             if (tab === 'habits') renderHabitsAll();
             lucide.createIcons();
@@ -2097,6 +2100,7 @@
             const semText = document.getElementById('dash-semester-week-text');
             if (semText) semText.textContent = getSemesterWeekInfo();
 
+            renderDashboardProjectCard();
             renderCustomGoals();
             renderDashboardTodayTasks();
             renderStickyNotes();
@@ -3444,6 +3448,66 @@
         }
 
         // ==================== 基隆景點專題 (11/11–12/11) 邏輯 ====================
+        const KEELUNG_DEADLINE = new Date(2026, 11, 11);
+
+        function getKeelungStats() {
+            const now = new Date();
+            const todayStr = `${now.getMonth() + 1}/${now.getDate()}`;
+            const checks = state.keelungPlanChecks || {};
+            let total = 0, done = 0, doneHw = 0, todayItem = null, nextItem = null;
+            KEELUNG_WEEKS_DATA.forEach((w, wi) => w.days.forEach(([date, wd, text, tags, preset], di) => {
+                const id = `d-${wi}-${di}`;
+                const checked = id in checks ? !!checks[id] : !!preset;
+                total++;
+                if (checked) { done++; if (tags.some(t => t.startsWith('hw'))) doneHw++; }
+                const item = { id, date, wd, text, checked };
+                if (date === todayStr) todayItem = item;
+                if (!checked && !nextItem) nextItem = item;
+            }));
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const daysLeft = Math.round((KEELUNG_DEADLINE - start) / 86400000);
+            return { pct: total ? Math.round(done / total * 100) : 0, doneHw, daysLeft, todayItem, nextItem };
+        }
+
+        function openKeelungPlan() {
+            activeAcadSub = 'keelung';
+            switchTab('academic');
+        }
+
+        function renderDashboardProjectCard() {
+            const box = document.getElementById('dash-project-card');
+            if (!box) return;
+            const st = getKeelungStats();
+            if (st.daysLeft < 0) { box.className = 'hidden'; box.innerHTML = ''; return; }
+            const item = st.todayItem || st.nextItem;
+            const label = st.todayItem ? '今天要做' : '下一步';
+            box.className = 'bg-theme-card rounded-3xl p-4 sm:p-5 shadow-card border border-theme-border space-y-3';
+            box.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="text-sm font-bold flex items-center gap-1.5 min-w-0">
+                        <span>📌</span><span class="truncate">基隆景點專題</span>
+                    </h3>
+                    <button onclick="openKeelungPlan()" class="text-xs font-bold text-theme-blueDark hover:underline shrink-0">完整計畫 →</button>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                    <div class="flex-1 h-2 bg-theme-oat rounded-full overflow-hidden">
+                        <div class="h-full bg-theme-blueDark rounded-full" style="width:${st.pct}%"></div>
+                    </div>
+                    <span class="font-bold shrink-0">${st.pct}%</span>
+                    <span class="text-theme-muted shrink-0">作業 ${st.doneHw}/5</span>
+                    <span class="font-bold text-theme-pinkDark shrink-0">${st.daysLeft === 0 ? '今天截止' : `剩 ${st.daysLeft} 天`}</span>
+                </div>
+                ${item ? `
+                    <label class="flex items-start gap-2.5 p-3 rounded-2xl bg-theme-blue/25 border border-theme-border cursor-pointer">
+                        <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleKeelungDay('${item.id}', this.checked)" class="w-4 h-4 mt-0.5 rounded accent-theme-blueDark shrink-0">
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-bold text-theme-blueDark">${label} • ${item.date}（週${item.wd}）</span>
+                            <p class="text-xs leading-relaxed break-words ${item.checked ? 'line-through text-theme-muted' : ''}">${escapeHtml(item.text)}</p>
+                        </div>
+                    </label>
+                ` : '<p class="text-xs text-theme-muted">所有進度都完成了，太厲害了！🎉</p>'}
+            `;
+        }
         function renderKeelungPlan() {
             const container = document.getElementById('keelung-weeks-container');
             if (!container) return;
@@ -3522,6 +3586,7 @@
             state.keelungPlanChecks[id] = isChecked;
             saveState();
             renderKeelungPlan();
+            renderDashboardProjectCard();
             if (isChecked) showToast('專題進度 +1！離完成五份作業更近一步 ✨');
         }
 
